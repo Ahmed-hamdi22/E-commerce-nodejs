@@ -7,6 +7,10 @@ const ApiError = require("./utils/apiError");
 dotenv.config({ path: "config.env" });
 const dbConnection = require("./config/database");
 const globalError = require("./middlewares/errorMiddleware");
+const subcategoryRoute = require("./routes/subCategoryRoute");
+
+const brandRoute = require("./routes/brandRoute");
+
 // Connect with db
 dbConnection();
 
@@ -22,11 +26,11 @@ if (process.env.NODE_ENV === "development") {
 }
 // Mount Routes
 app.use("/api/v1/categories", categoryRoute);
+app.use("/api/v1/subcategories", subcategoryRoute);
+app.use("/api/v1/brands", brandRoute);
 
 // All Unhandled Routes
-app.use((req, res, next) => {
-  return next(new globalError(`Route ${req.originalUrl} not found`, 404));
-});
+app.use((req, res, next) => next(new ApiError(`Route ${req.originalUrl} not found`, 404)));
 
 // Handle Unhandled Routes
 app.use(globalError);

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 // 1- Create Schema
-const categorySchema = new mongoose.Schema(
+const brandSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -23,6 +23,6 @@ const categorySchema = new mongoose.Schema(
 );
 
 // 2- Create model
-const CategoryModel = mongoose.model("Category", categorySchema);
+const brandModel = mongoose.model("Brand", brandSchema);
 
-module.exports = CategoryModel;
+module.exports = brandModel;
