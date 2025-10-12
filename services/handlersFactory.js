@@ -1,4 +1,6 @@
 const asyncHandler = require("express-async-handler");
+const slugify = require("slugify");
+
 const ApiError = require("../utils/apiError");
 const ApiFeatures = require("../utils/apiFeatures");
 
@@ -15,6 +17,9 @@ exports.deleteOne = (Model) =>
 
 exports.updateOne = (Model) =>
   asyncHandler(async (req, res, next) => {
+    if (req.body.name) {
+      req.body.slug = slugify(req.body.name, { lower: true });
+    }
     const document = await Model.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
