@@ -37,14 +37,16 @@ exports.uploadCategoryImage = uploadSingleImage("image");
 
 exports.resizeCategoryImage = asyncHandler(async (req, res, next) => {
   const fileName = `category-${uuidv4()}-${Date.now()}.jpeg`;
-  sharp(req.file.buffer)
-    .resize(600, 600)
-    .toFormat("jpeg")
-    .jpeg({ quality: 90 })
-    .toFile(`uploads/categories/${fileName}`);
+  if (req.file) {
+    await sharp(req.file.buffer)
+      .resize(600, 600)
+      .toFormat("jpeg")
+      .jpeg({ quality: 90 })
+      .toFile(`uploads/categories/${fileName}`);
 
-  // Save image into our db
-  req.body.image = fileName;
+    // Save image into our db
+    req.body.image = fileName;
+  }
 
   next();
 });
