@@ -43,6 +43,19 @@ const userSchema = new mogoose.Schema(
       type: Boolean,
       default: true,
     },
+    wishlist: [{ type: mogoose.Schema.ObjectId, ref: "Product" }],
+
+    addresses: [
+      {
+        id: { type: mogoose.Schema.Types.ObjectId },
+        alias: String,
+        details: String,
+        phone: String,
+        postalCode: String,
+        city: String,
+        country: String,
+      },
+    ],
   },
   { timestamps: true },
 );

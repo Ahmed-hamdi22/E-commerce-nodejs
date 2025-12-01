@@ -20,6 +20,8 @@ const AuthService = require("../services/authService");
 const subCategoryRoute = require("./subCategoryRoute");
 
 const router = express.Router();
+
+// Nasted route for subcategories
 router.use("/:categoryId/subcategories", subCategoryRoute);
 
 router

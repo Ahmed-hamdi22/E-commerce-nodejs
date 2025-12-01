@@ -12,6 +12,7 @@ exports.deleteOne = (Model) =>
     if (!document) {
       return next(new ApiError(`No document for this id ${id}`, 404));
     }
+    // Trigger the "save" event to update average ratings after delete review
     res.status(204).send();
   });
 
@@ -27,6 +28,9 @@ exports.updateOne = (Model) =>
     if (!document) {
       return next(new ApiError(`No document for this id ${req.params.id}`, 404));
     }
+
+    // Trigger the "save" event to update average ratings after update review
+    document.save();
     res.status(200).json({ data: document });
   });
 
@@ -39,10 +43,23 @@ exports.createOne = (Model) =>
 exports.getOne = (Model) =>
   asyncHandler(async (req, res, next) => {
     const { id } = req.params;
-    const document = await Model.findById(id);
+
+    let query = Model.findById(id);
+
+    // Check if the model is Product to populate reviews
+    if (Model.modelName === "Product") {
+      query = query.populate({
+        path: "reviews",
+        select: "title rating user createdAt",
+      });
+    }
+
+    const document = await query;
+
     if (!document) {
       return next(new ApiError(`No document for this id ${id}`, 404));
     }
+
     res.status(200).json({ data: document });
   });
 
