@@ -20,6 +20,7 @@ const reviewRoute = require("./routes/reviewRoute");
 const wishlistRoute = require("./routes/wishlistRoute");
 const AddressRoute = require("./routes/addressesRoute");
 const couponRoute = require("./routes/couponRoute");
+const cartRoute = require("./routes/cartRoute");
 
 // Connect with db
 dbConnection();
@@ -46,6 +47,7 @@ app.use("/api/v1/reviews", reviewRoute);
 app.use("/api/v1/wishlist", wishlistRoute);
 app.use("/api/v1/addresses", AddressRoute);
 app.use("/api/v1/coupons", couponRoute);
+app.use("/api/v1/cart", cartRoute);
 
 // All Unhandled Routes
 app.use((req, res, next) => next(new ApiError(`Route ${req.originalUrl} not found`, 404)));
