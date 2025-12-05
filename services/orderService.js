@@ -1,10 +1,15 @@
 const asyncHandler = require("express-async-handler");
+const dotenv = require("dotenv");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const Order = require("../models/orderModel");
 const factory = require("./handlersFactory");
 const APiError = require("../utils/apiError");
 const Cart = require("../models/cartModel");
 const Product = require("../models/productModel");
+const User = require("../models/userModel");
+
+dotenv.config({ path: "config.env" });
 
 // @ desc    Create cash order
 // @ route   POST /api/v1/orders/cash
@@ -103,3 +108,84 @@ exports.updateOrderToDelivered = asyncHandler(async (req, res, next) => {
     data: updatedOrder,
   });
 });
+
+// @desc    Create checkout session from stripe
+// @route   POST /api/v1/orders/checkout-session/:cartId
+// @access  Private/User
+exports.createCheckoutSession = asyncHandler(async (req, res, next) => {
+  // app settings
+  const taxPrice = 0;
+  const shippingPrice = 0;
+
+  // 1) Get cart based on cartId
+  const cart = await Cart.findById(req.params.cartId);
+  if (!cart) {
+    return next(new APiError(`There is no such cart with id ${req.params.cartId}`, 404));
+  }
+
+  // 2) Get order price depend on if there is coupon or not
+  const cartPrice = cart.totalPriceAfterDiscount
+    ? cart.totalPriceAfterDiscount
+    : cart.totalCartPrice;
+
+  const totalOrderPrice = cartPrice + taxPrice + shippingPrice;
+
+  // 3) Create stripe checkout session
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        price_data: {
+          currency: "egp",
+          product_data: {
+            name: req.user.name,
+          },
+          unit_amount: totalOrderPrice * 100,
+        },
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    success_url: `${req.protocol}://${req.get("host")}/orders`,
+    cancel_url: `${req.protocol}://${req.get("host")}/cart`,
+    customer_email: req.user.email,
+    client_reference_id: req.params.cartId,
+    metadata: req.body.shippingAddress,
+  });
+
+  // 4) send session to response
+  res.status(200).json({ status: "success", session });
+});
+
+const createCardOrder = async (session) => {
+  const cartId = session.client_reference_id;
+  const shippingAddress = session.metadata;
+  const orderPrice = session.amount_total / 100;
+
+  const cart = await Cart.findById(cartId);
+  const user = await User.findOne({ email: session.customer_email });
+
+  // 3) Create order with default paymentMethodType card
+  const order = await Order.create({
+    user: user._id,
+    cartItems: cart.cartItem,
+    shippingAddress,
+    totalOrderPrice: orderPrice,
+    isPaid: true,
+    paidAt: Date.now(),
+    paymentMethodType: "card",
+  });
+
+  // 4) After creating order, decrement product quantity, increment product sold
+  if (order) {
+    const bulkOption = cart.cartItem.map((item) => ({
+      updateOne: {
+        filter: { _id: item.productId },
+        update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
+      },
+    }));
+    await Product.bulkWrite(bulkOption, {});
+
+    // 5) Clear cart depend on cartId
+    await Cart.findByIdAndDelete(cartId);
+  }
+};

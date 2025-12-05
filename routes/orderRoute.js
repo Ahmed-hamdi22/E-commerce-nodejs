@@ -7,11 +7,19 @@ const {
   filterOrderForLoggedUser,
   updateOrderToPaid,
   updateOrderToDelivered,
+  createCheckoutSession,
 } = require("../services/orderService");
 
 const AuthService = require("../services/authService");
 
 const router = express.Router();
+
+router.post(
+  "/checkout-session/:cartId",
+  AuthService.protect,
+  AuthService.allowedTo("user"),
+  createCheckoutSession,
+);
 
 router.post("/:cartId", AuthService.protect, AuthService.allowedTo("user"), createCashOrder);
 router.get(
